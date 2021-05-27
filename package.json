@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/snollygolly/token-buddy#readme",
   "dependencies": {
+    "abi-decoder": "^2.4.0",
     "bip39": "^3.0.4",
     "ethereumjs-util": "^7.0.10",
     "ethereumjs-wallet": "^1.0.1",

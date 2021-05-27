@@ -1,6 +1,7 @@
 const Web3 = require("web3");
 const { hdkey } = require("ethereumjs-wallet");
 const bip39 = require("bip39");
+const abiDecoder = require("abi-decoder");
 
 let config = {};
 
@@ -81,5 +82,30 @@ module.exports = {
     });
     return result;
   },
-};
+  getTokenTransactions: async (blocks = 1000) => {
+    const address = config.wallet.getAddressString().toLowerCase();
 
+    const endBlockNumber = await config.web3.eth.getBlockNumber();
+    const startBlockNumber = Math.max(endBlockNumber - blocks, 0);
+
+	abiDecoder.addABI(config.token.abi);
+	const results = [];
+    for (let i = startBlockNumber; i <= endBlockNumber; i++) {
+      const block = await config.web3.eth.getBlock(i, true);
+      if (block != null && block.transactions != null) {
+		for (const e of block.transactions) {
+			const decoded = abiDecoder.decodeMethod(e.input)
+			if (!decoded) { continue; }
+			results.push({
+				hash: e.hash,
+				from: e.from,
+				to: decoded.params[0].value,
+				tokens: decoded.params[1].value,
+				gas: e.gas
+			})
+		}
+      }
+    }
+	return results;
+  },
+};
