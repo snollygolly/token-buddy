@@ -4,7 +4,8 @@
   "description": "A helper for handling tokens in your app",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:dev": "jest --watch"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
     "web3": "^1.3.6"
   },
   "devDependencies": {
-    "eslint": "^7.27.0"
+    "eslint": "^7.27.0",
+    "jest": "^27.0.1"
   }
 }
