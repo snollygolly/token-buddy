@@ -3,6 +3,9 @@ const { hdkey } = require("ethereumjs-wallet");
 const bip39 = require("bip39");
 const abiDecoder = require("abi-decoder");
 
+const erc20 = require("./erc20");
+const exchange = require("./exchange");
+
 let config = {};
 
 module.exports = {
@@ -33,6 +36,7 @@ module.exports = {
       mnemonic: data.mnemonic,
       index: data.index,
       token: data.token,
+      exchangeFactoryAddress: data.exchangeFactoryAddress,
     };
     const seed = await bip39.mnemonicToSeed(config.mnemonic);
     config.root = hdkey.fromMasterSeed(seed);
@@ -88,24 +92,62 @@ module.exports = {
     const endBlockNumber = await config.web3.eth.getBlockNumber();
     const startBlockNumber = Math.max(endBlockNumber - blocks, 0);
 
-	abiDecoder.addABI(config.token.abi);
-	const results = [];
+    abiDecoder.addABI(config.token.abi);
+    const results = [];
     for (let i = startBlockNumber; i <= endBlockNumber; i++) {
       const block = await config.web3.eth.getBlock(i, true);
       if (block != null && block.transactions != null) {
-		for (const e of block.transactions) {
-			const decoded = abiDecoder.decodeMethod(e.input)
-			if (!decoded) { continue; }
-			results.push({
-				hash: e.hash,
-				from: e.from,
-				to: decoded.params[0].value,
-				tokens: decoded.params[1].value,
-				gas: e.gas
-			})
-		}
+        for (const e of block.transactions) {
+          const decoded = abiDecoder.decodeMethod(e.input);
+          if (!decoded) {
+            continue;
+          }
+          results.push({
+            hash: e.hash,
+            from: e.from,
+            to: decoded.params[0].value,
+            tokens: decoded.params[1].value,
+            gas: e.gas,
+          });
+        }
       }
     }
-	return results;
+    return results;
+  },
+  getExchangeRate: async (baseAddress, quoteAddress) => {
+    const factoryContract = new config.web3.eth.Contract(
+      exchange.factory_abi,
+      config.exchangeFactoryAddress
+    );
+
+    const quoteContract = await new config.web3.eth.Contract(
+      erc20.abi,
+      quoteAddress
+    );
+    const quoteDecimals = await quoteContract.methods.decimals().call();
+
+    const baseContract = await new config.web3.eth.Contract(
+      erc20.abi,
+      baseAddress
+    );
+    const baseDecimals = await baseContract.methods.decimals().call();
+
+    const pairAddress = await factoryContract.methods
+      .getPair(baseAddress, quoteAddress)
+      .call();
+
+    const pairContract = new config.web3.eth.Contract(
+      exchange.pair_abi,
+      pairAddress
+    );
+
+    const reserves = await pairContract.methods.getReserves().call();
+
+    const res0 = reserves._reserve0 * 10 ** quoteDecimals;
+    const res1 = reserves._reserve1 * 10 ** baseDecimals;
+
+    const price = res1 / res0;
+
+    return price;
   },
 };
