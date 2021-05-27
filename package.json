@@ -4,7 +4,8 @@
   "description": "A helper for handling tokens in your app",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:dev": "jest --watch"
   },
   "repository": {
     "type": "git",

@@ -230,7 +230,7 @@ describe("Root module test", () => {
           }),
           transfer: jest.fn().mockReturnThis(),
           estimateGas: jest.fn().mockReturnValue(1.0),
-          send: jest.fn().mockReturnValue("whatever"),
+          send: jest.fn()
         },
       };
 
